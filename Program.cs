@@ -1,27 +1,29 @@
-using Quartz;
+using Serilog;
+using Serilog.Events;
 using TaskScheduler;
 
-var builder = WebApplication.CreateBuilder(args);
-var services = builder.Services;
-
-services.AddQuartz(builder =>
+class Program
 {
-    var jobKey = new JobKey("HelloJob");
-    builder.AddJob<HelloJob>(options => options.WithIdentity(jobKey));
-    builder.AddTrigger(
-        options => options
-            .ForJob(jobKey)
-            .WithIdentity("HelloJob-Trigger")
-            .WithCronSchedule("0 * * ? * *"));
-});
+    static async Task Main(string[] args)
+    {
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("MassTransit", LogEventLevel.Debug)
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .CreateLogger();
 
-services.AddQuartzHostedService(builder =>
-{
-    builder.WaitForJobsToComplete = false;
-});
+        var host = CreateHostBuilder(args).Build();
 
-var app = builder.Build();
+        await host.RunAsync();
+    }
 
-app.MapGet("/", () => "Hello World!");
-
-app.Run();
+    static IHostBuilder CreateHostBuilder(string[] args)
+    {
+        return Host.CreateDefaultBuilder(args)
+            .ConfigureHostConfiguration(builder => builder.AddEnvironmentVariables())
+            .UseSerilog()
+            .ConfigureWebHostDefaults(builder => builder.UseStartup<Startup>());
+    }
+}
