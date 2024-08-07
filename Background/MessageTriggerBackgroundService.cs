@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using TaskScheduler.Messages;
+using TaskScheduler.Schedules;
 
 namespace TaskScheduler.Background
 {
@@ -14,33 +15,77 @@ namespace TaskScheduler.Background
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            await SendQuartzMessage(stoppingToken);
+        }
+
+        private async Task SendQuartzMessage(CancellationToken cancellationToken)
+        {
+            AsyncServiceScope scope = default;
+
+            try
             {
-                AsyncServiceScope scope = default;
+                scope = _serviceScopeFactory.CreateAsyncScope();
 
-                try
+                var messageScheduler = scope.ServiceProvider.GetRequiredService<IMessageScheduler>();
+                var quartzMessage = new QuartzMessage
                 {
-                    scope = _serviceScopeFactory.CreateAsyncScope();
+                    Destination = new Uri("queue:quartz"),
+                    Payload = new { Name = "Gabriel" },
+                    PayloadType = new string[1] { "Person" },
+                    Schedule = new EachMinute(),
+                };
 
-                    //    var bus = scope.ServiceProvider.GetRequiredService<IBus>();
-                    //    var schedulerEndpoint = await bus.GetSendEndpoint(new Uri("queue:quartz"));
+                await messageScheduler.SchedulePublish(
+                    scheduledTime: new DateTime() + TimeSpan.FromSeconds(10),
+                    message: quartzMessage,
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+        }
 
-                    //await schedulerEndpoint.ScheduleRecurringSend(
-                    //    new Uri("queue:Message"), new MessageSchedule(), new Message("Hello World!"));
+        private async Task SendScheduleMessage(CancellationToken cancellationToken)
+        {
+            AsyncServiceScope scope = default;
 
-                    var messageScheduler = scope.ServiceProvider.GetRequiredService<IMessageScheduler>();
+            try
+            {
+                scope = _serviceScopeFactory.CreateAsyncScope();
 
-                    await messageScheduler.SchedulePublish(
-                        scheduledTime: new DateTime() + TimeSpan.FromSeconds(15),
-                        message: new Message("Hello World!"),
-                        cancellationToken: stoppingToken);
-                }
-                finally
-                {
-                    scope.Dispose();
-                }
+                var bus = scope.ServiceProvider.GetRequiredService<IBus>();
+                var schedulerEndpoint = await bus.GetSendEndpoint(new Uri("queue:quartz"));
 
-                Thread.Sleep(TimeSpan.FromSeconds(30));
+                await schedulerEndpoint.ScheduleRecurringSend(
+                    destinationAddress: new Uri("queue:quartz"),
+                    schedule: new MessageSchedule(),
+                    message: new Message("Hello World"),
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+        }
+
+        private async Task SendMessage(CancellationToken cancellationToken)
+        {
+            AsyncServiceScope scope = default;
+
+            try
+            {
+                scope = _serviceScopeFactory.CreateAsyncScope();
+
+                var messageScheduler = scope.ServiceProvider.GetRequiredService<IMessageScheduler>();
+                await messageScheduler.SchedulePublish(
+                    scheduledTime: new DateTime() + TimeSpan.FromSeconds(10),
+                    message: new Message("Hello World!"),
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                scope.Dispose();
             }
         }
     }

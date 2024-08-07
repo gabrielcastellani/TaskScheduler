@@ -24,6 +24,7 @@ namespace TaskScheduler
                 quartz.SchedulerName = "Scheduler";
                 quartz.SchedulerId = "Auto";
 
+                //quartz.AddJob<QuartzMessageJob>(opt => opt.WithIdentity(QuartzMessageJob.Key));
                 quartz.UseMicrosoftDependencyInjectionJobFactory();
                 quartz.UseDefaultThreadPool(threadPool => threadPool.MaxConcurrency = 10);
                 quartz.UseTimeZoneConverter();
@@ -31,12 +32,13 @@ namespace TaskScheduler
 
             services.AddMassTransit(builder =>
             {
-                Uri schedulerEndpoint = new Uri("queue:quartz");
+                //Uri schedulerEndpoint = new Uri("queue:quartz");
 
-                builder.AddMessageScheduler(schedulerEndpoint);
+                //builder.AddMessageScheduler(schedulerEndpoint);
                 builder.AddPublishMessageScheduler();
                 builder.AddQuartzConsumers();
                 builder.AddConsumer<MessageConsumer>();
+                builder.AddConsumer<QuartzMessageConsumer>();
                 builder.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.UsePublishMessageScheduler();
