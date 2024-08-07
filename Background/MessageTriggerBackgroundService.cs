@@ -6,16 +6,27 @@ namespace TaskScheduler.Background
 {
     internal sealed class MessageTriggerBackgroundService : BackgroundService
     {
+        private readonly IBus _bus;
         private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public MessageTriggerBackgroundService(IServiceScopeFactory serviceScopeFactory)
+        public MessageTriggerBackgroundService(
+            IBus bus,
+            IServiceScopeFactory serviceScopeFactory)
         {
+            _bus = bus;
             _serviceScopeFactory = serviceScopeFactory;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await SendQuartzMessage(stoppingToken);
+            //await _bus.Publish(new QuartzMessage
+            //{
+            //    Destination = new Uri("queue:quartz"),
+            //    Payload = new { Name = "Gabriel" },
+            //    PayloadType = new string[1] { "Person" },
+            //    Schedule = new EachMinute(),
+            //}, stoppingToken);
         }
 
         private async Task SendQuartzMessage(CancellationToken cancellationToken)
@@ -36,7 +47,7 @@ namespace TaskScheduler.Background
                 };
 
                 await messageScheduler.SchedulePublish(
-                    scheduledTime: new DateTime() + TimeSpan.FromSeconds(10),
+                    scheduledTime: new DateTime(),
                     message: quartzMessage,
                     cancellationToken: cancellationToken);
             }

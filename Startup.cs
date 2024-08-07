@@ -39,11 +39,15 @@ namespace TaskScheduler
                 builder.AddQuartzConsumers();
                 builder.AddConsumer<MessageConsumer>();
                 builder.AddConsumer<QuartzMessageConsumer>();
-                builder.UsingRabbitMq((context, cfg) =>
+                builder.UsingInMemory((context, cfg) =>
                 {
-                    cfg.UsePublishMessageScheduler();
                     cfg.ConfigureEndpoints(context);
                 });
+                //builder.UsingRabbitMq((context, cfg) =>
+                //{
+                //    cfg.UsePublishMessageScheduler();
+                //    cfg.ConfigureEndpoints(context);
+                //});
             });
 
             services.Configure<MassTransitHostOptions>(options =>
@@ -53,8 +57,8 @@ namespace TaskScheduler
 
             services.AddQuartzHostedService(options =>
             {
-                options.StartDelay = TimeSpan.FromSeconds(5);
-                options.WaitForJobsToComplete = true;
+                //options.StartDelay = TimeSpan.FromSeconds(5);
+                options.WaitForJobsToComplete = false;
             });
 
             services.AddHostedService<MessageTriggerBackgroundService>();
