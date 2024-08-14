@@ -19,7 +19,8 @@ namespace TaskScheduler.Background
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await SendQuartzMessage(stoppingToken);
+            await SendQuartzMessageAsync(stoppingToken);
+            await SendEmailMessageAsync(stoppingToken);
             //await _bus.Publish(new QuartzMessage
             //{
             //    Destination = new Uri("queue:quartz"),
@@ -29,7 +30,28 @@ namespace TaskScheduler.Background
             //}, stoppingToken);
         }
 
-        private async Task SendQuartzMessage(CancellationToken cancellationToken)
+        private async Task SendEmailMessageAsync(CancellationToken cancellationToken)
+        {
+            AsyncServiceScope scope = default;
+
+            try
+            {
+                scope = _serviceScopeFactory.CreateAsyncScope();
+
+                var messageScheduler = scope.ServiceProvider.GetRequiredService<IMessageScheduler>();
+                
+                await messageScheduler.SchedulePublish(
+                    scheduledTime: new DateTime(),
+                    message: new SendEmailMessage(),
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                scope.Dispose();
+            }
+        }
+
+        private async Task SendQuartzMessageAsync(CancellationToken cancellationToken)
         {
             AsyncServiceScope scope = default;
 

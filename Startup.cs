@@ -39,6 +39,7 @@ namespace TaskScheduler
                 builder.AddQuartzConsumers();
                 builder.AddConsumer<MessageConsumer>();
                 builder.AddConsumer<QuartzMessageConsumer>();
+                builder.AddConsumer<SendEmailMessageConsumer>();
                 builder.UsingInMemory((context, cfg) =>
                 {
                     cfg.ConfigureEndpoints(context);
